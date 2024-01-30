@@ -1,0 +1,84 @@
+version: '3.8'
+
+services:
+    dev:
+        container_name: iwarrenty_api_dev
+        image: iwarrenty-api-dev:1.0.0
+        build:
+            context: .
+            target: development
+            dockerfile: ./Dockerfile
+        command: npm run start:debug
+        ports:
+            - "3000:3000"
+            - "9229:9229"  # Debugger port
+        networks:
+            - iwarrenty-network
+        volumes:
+            - .:/usr/src/app
+            - /usr/src/app/node_modules
+        depends_on:
+            - mongodb
+            - redis
+            - redis-stack
+        restart: unless-stopped
+        environment: 
+            DATABASE_URL: mongodb://mongodb:27017/iwarrenty
+            NODE_ENV: development
+            JWT_SECRET: 1hard_to_guess_secret7890a
+            PORT: 3000
+    prod:
+        container_name: iwarrenty_api_prod
+        image: iwarrenty-api-prod:1.0.0
+        build:
+            context: .
+            target: production
+            dockerfile: ./Dockerfile
+        command: npm run start:prod
+        ports:
+            - "3000:3000"
+        networks:
+            - iwarrenty-network
+        volumes:
+            - .:/usr/src/app
+            - /usr/src/app/node_modules
+        depends_on:
+            - mongodb
+            - redis
+        restart: unless-stopped
+
+    mongodb:
+        image: mongo:latest
+        container_name: mongodb
+        ports:
+            - "27017:27017"
+        networks:
+            - iwarrenty-network
+        volumes:
+            - mongodb-data:/data/db
+        restart: unless-stopped
+
+    redis:
+        image: redis:latest
+        container_name: redis
+        ports:
+            - '127.0.0.1:6379:6379/tcp'
+        networks:
+            - iwarrenty-network
+        restart: unless-stopped
+    
+    redis-stack:
+        image: redis/redis-stack:latest
+        container_name: redis-stack
+        ports:
+            - '127.0.0.1:8001:8001'
+        networks:
+            - iwarrenty-network
+        restart: unless-stopped
+
+networks:
+    iwarrenty-network:
+        name: iwarrenty-network
+
+volumes:
+    mongodb-data:
